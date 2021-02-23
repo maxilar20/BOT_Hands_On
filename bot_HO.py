@@ -66,15 +66,11 @@ async def message_status(member, player, teams):
 @tasks.loop(seconds=1)
 async def update_status_torneo():
     await client.wait_until_ready()
-    try:
-        with open('DataBase.xlsx', 'rb') as file :
-            torneos = pd.read_excel(file, sheet_name='torneos', index_col=0, header=0)
-            teams   = pd.read_excel(file, sheet_name='equipos', index_col=0, header=0).fillna(0)
-        with open('message_ids.csv', 'rb') as file :
-            message_ids = pd.DataFrame(pd.read_csv(file, index_col = 0, header = 0, squeeze = True))
-    except:
-        print("failed to open")
-        return
+    with open('DataBase.xlsx', 'rb') as file :
+        torneos = pd.read_excel(file, sheet_name='torneos', index_col=0, header=0)
+        teams   = pd.read_excel(file, sheet_name='equipos', index_col=0, header=0).fillna(0)
+    with open('message_ids.csv', 'rb') as file :
+        message_ids = pd.DataFrame(pd.read_csv(file, index_col = 0, header = 0, squeeze = True))
 
 
     channel = discord.utils.get(client.get_all_channels(), guild__name='Hands-On RD', name='📃status-torneos')
