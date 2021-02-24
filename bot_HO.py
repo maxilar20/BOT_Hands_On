@@ -115,13 +115,12 @@ async def update_marketplace():
     with open('market_db.csv', 'rb') as file :
         products = pd.DataFrame(pd.read_csv(file, index_col = 0, header = 0, squeeze = True))
 
-    product_text = "Producto, Costo, Vendedor"
-    for i in products.iterrows():
-        product_text += str(i[1]["product"]) + "  " + str(i[1]["cost"]) + "  "  + str(i[1]["seller"]) +" \n "
-
-
     heading = ["ID", "Producto", "Precio", "Usuario"]
-    torneo_status_embed = discord.Embed(title=f"MarketPlace", description="selling_text", color=0x00ff00)
+    description = "Bienvenidos al Market Place de Mecatronica. \
+                    Para poner un producto en venta escriba '!sell arduino,25'. \
+                    Para comprar un producto contacte con el usuario que lo puso en venta y si no existe puede poner una oferta \
+                    '!buy raspberry,35'"
+    torneo_status_embed = discord.Embed(title=f"MarketPlace", description=description, color=0x00ff00)
     selling_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==0].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
     buying_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==1].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
     torneo_status_embed.add_field(name="Selling", value=selling_text, inline=False)
