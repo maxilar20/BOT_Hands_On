@@ -96,6 +96,40 @@ async def update_status_torneo():
     message_ids.to_csv("message_ids.csv", index = True)
     #print("torneos post done")
 
+async def update_marketplace():
+    await client.wait_until_ready()
+    with open('DataBase.xlsx', 'rb') as file :
+        torneos = pd.read_excel(file, sheet_name='torneos', index_col=0, header=0)
+        teams   = pd.read_excel(file, sheet_name='equipos', index_col=0, header=0).fillna(0)
+    with open('message_ids.csv', 'rb') as file :
+        message_ids = pd.DataFrame(pd.read_csv(file, index_col = 0, header = 0, squeeze = True))
+
+
+    channel = discord.utils.get(client.get_all_channels(), guild__name='Hands-On RD', name='📃status-torneos')
+    for torneo, info_torneo in torneos.loc[torneos["activo"]==1].iterrows():
+        try:
+            message_edit = await channel.fetch_message(message_ids.loc[torneo, "message_id"])
+        except:
+            message_edit = await channel.send(embed = discord.Embed(title=f"__**Torneo {info_torneo.loc['nombre']}:**__",description=""))
+            message_ids.loc[torneo, "message_id"] = str(message_edit.id)
+
+        torneo_status_embed = discord.Embed(title=f"__**Torneo {info_torneo.loc['nombre']}:**__",
+                                    description="", color=0x00ff00)
+        for casa in casas:
+            torneo_status_embed.add_field(name=f"{casa[1]}  __**{casa[0]}**__: {places_dict.get(info_torneo[casa[4]], ':zero:')}", value=f"Puntos: {str(int(info_torneo[casa[2]]))}, participantes: {str(int(info_torneo[casa[3]]))}", inline=False)
+            for idx, categoria in enumerate(categorias):
+                list = ""
+                for team, team_info in teams.loc[(teams["torneo"] == torneo) & (teams["categoria"] == categoria) & (teams["casa"] == casa[0])].iterrows():
+                    list += f"{status_dict_2[team_info['DD']]} {status_dict_2[team_info['DF']]} {status_dict_2[team_info['CL']]} {places_dict.get(team_info['lugar'], ':black_large_square:')} {team_info.loc['nombre'].title() if len(team_info.loc['nombre']) < 12 else team_info.loc['nombre'][:10].title()}\n"
+                if list == "":
+                    list = "."
+                torneo_status_embed.add_field(name=f"__**{categoria}:**__ \n", value=list, inline=True)
+
+        await message_edit.edit(embed = torneo_status_embed)
+
+    message_ids.to_csv("message_ids.csv", index = True)
+    #print("torneos post done")
+
 
 @client.event
 async def on_ready():
