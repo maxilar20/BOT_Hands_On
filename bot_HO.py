@@ -121,12 +121,12 @@ async def update_marketplace():
                     Para comprar un producto contacte con el usuario que lo puso en venta y si no existe puede poner una oferta \
                     '!buy raspberry,35'"
     torneo_status_embed = discord.Embed(title=f"MarketPlace", description=description, color=0x00ff00)
-    print(len(products.loc[products["buying"]==0]))
-    print(len(products.loc[products["buying"]==1]))
-    selling_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==0].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
-    buying_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==1].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
-    torneo_status_embed.add_field(name="Selling", value=selling_text, inline=False)
-    torneo_status_embed.add_field(name="Buying", value=buying_text, inline=False)
+    if len(products.loc[products["buying"]==0]):
+        selling_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==0].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
+        torneo_status_embed.add_field(name="Selling", value=selling_text, inline=False)
+    if len(products.loc[products["buying"]==1]):
+        buying_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==1].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
+        torneo_status_embed.add_field(name="Buying", value=buying_text, inline=False)
 
     await message_edit.edit(embed = torneo_status_embed)
 
