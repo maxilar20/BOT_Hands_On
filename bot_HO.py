@@ -116,8 +116,8 @@ async def update_marketplace():
         products = pd.DataFrame(pd.read_csv(file, index_col = 0, header = 0, squeeze = True))
 
     heading = ["ID", "Producto", "Precio", "Usuario"]
-    description = "Bienvenidos al Market Place de Mecatronica. \
-                    Para poner un producto en venta escriba '!sell arduino,25'. \
+    description = "Bienvenidos al Market Place de Mecatronica. \n\n \
+                    Para poner un producto en venta escriba '!sell arduino,25'. \n \
                     Para comprar un producto contacte con el usuario que lo puso en venta y si no existe puede poner una oferta \
                     '!buy raspberry,35'"
     torneo_status_embed = discord.Embed(title=f"MarketPlace", description=description, color=0x00ff00)
