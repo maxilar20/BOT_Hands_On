@@ -121,6 +121,8 @@ async def update_marketplace():
                     Para comprar un producto contacte con el usuario que lo puso en venta y si no existe puede poner una oferta \
                     '!buy raspberry,35'"
     torneo_status_embed = discord.Embed(title=f"MarketPlace", description=description, color=0x00ff00)
+    print(len(products.loc[products["buying"]==0]))
+    print(len(products.loc[products["buying"]==1]))
     selling_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==0].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
     buying_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==1].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
     torneo_status_embed.add_field(name="Selling", value=selling_text, inline=False)
@@ -199,7 +201,8 @@ async def on_message(message):
         await message.delete()
         index = int(message.content[8:])
         market_db = pd.DataFrame(pd.read_csv("market_db.csv", index_col = 0, header = 0, squeeze = True))
-        market_db = market_db.drop(index = index)
+        if str(message.author) == str(market_db.loc[index]["seller"]):
+            market_db = market_db.drop(index = index)
         market_db.to_csv("market_db.csv", index = True)
 
     # When message is "!update"
