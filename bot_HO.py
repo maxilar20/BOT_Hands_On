@@ -187,14 +187,14 @@ async def on_message(message):
         await message.delete()
         product, price = message.content[6:].split(",")
         market_db = pd.DataFrame(pd.read_csv("market_db.csv", index_col = 0, header = 0, squeeze = True))
-        market_db = market_db.append({"product": product.replace(" ",""), "cost": price.replace(" ",""), "seller": message.author, "buying": 0}, ignore_index=True)
+        market_db = market_db.append({"product": product, "cost": price, "seller": message.author, "buying": 0}, ignore_index=True)
         market_db.to_csv("market_db.csv", index = True)
 
     if str(message.channel) == "📃marketplace" and message.content.startswith('!buy'):
         await message.delete()
         product, price = message.content[5:].split(",")
         market_db = pd.DataFrame(pd.read_csv("market_db.csv", index_col = 0, header = 0, squeeze = True))
-        market_db = market_db.append({"product": product.replace(" ",""), "cost": price.replace(" ",""), "seller": message.author, "buying": 1}, ignore_index=True)
+        market_db = market_db.append({"product": product, "cost": price, "seller": message.author, "buying": 1}, ignore_index=True)
         market_db.to_csv("market_db.csv", index = True)
 
     if str(message.channel) == "📃marketplace" and message.content.startswith('!delete'):
