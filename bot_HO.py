@@ -96,41 +96,41 @@ async def update_status_torneo():
     message_ids.to_csv("message_ids.csv", index = True)
     #print("torneos post done")
 
+@tasks.loop(seconds=1)
 async def update_marketplace():
     await client.wait_until_ready()
-    with open('DataBase.xlsx', 'rb') as file :
-        torneos = pd.read_excel(file, sheet_name='torneos', index_col=0, header=0)
-        teams   = pd.read_excel(file, sheet_name='equipos', index_col=0, header=0).fillna(0)
-    with open('message_ids.csv', 'rb') as file :
-        message_ids = pd.DataFrame(pd.read_csv(file, index_col = 0, header = 0, squeeze = True))
+    with open('market_message_id.txt', 'rb') as file :
+        market_message_id = int(file.read())
+
+    channel = discord.utils.get(client.get_all_channels(), guild__name='Hands-On RD', name='📃marketplace')
+    try:
+        message_edit = await channel.fetch_message(int(market_message_id))
+    except:
+        message_edit = await channel.send(embed = discord.Embed(title=f"MarketPlace",description=""))
+        market_message_id = message_edit.id
+        print(market_message_id)
+        with open('market_message_id.txt', 'w') as file :
+            file.write(str(market_message_id))
+
+    with open('market_db.csv', 'rb') as file :
+        products = pd.DataFrame(pd.read_csv(file, index_col = 0, header = 0, squeeze = True))
+
+    product_text = "Producto, Costo, Vendedor"
+    for i in products.iterrows():
+        product_text += str(i[1]["product"]) + "  " + str(i[1]["cost"]) + "  "  + str(i[1]["seller"]) +" \n "
 
 
-    channel = discord.utils.get(client.get_all_channels(), guild__name='Hands-On RD', name='📃status-torneos')
-    for torneo, info_torneo in torneos.loc[torneos["activo"]==1].iterrows():
-        try:
-            message_edit = await channel.fetch_message(message_ids.loc[torneo, "message_id"])
-        except:
-            message_edit = await channel.send(embed = discord.Embed(title=f"__**Torneo {info_torneo.loc['nombre']}:**__",description=""))
-            message_ids.loc[torneo, "message_id"] = str(message_edit.id)
+    heading = ["ID", "Producto", "Precio", "Usuario"]
+    torneo_status_embed = discord.Embed(title=f"MarketPlace", description="selling_text", color=0x00ff00)
+    selling_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==0].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
+    buying_text = "```" + "\n\n" + tabulate(products.loc[products["buying"]==1].drop(columns="buying"), heading, tablefmt='plain', colalign=("right",)) + "```"
+    torneo_status_embed.add_field(name="Selling", value=selling_text, inline=False)
+    torneo_status_embed.add_field(name="Buying", value=buying_text, inline=False)
 
-        torneo_status_embed = discord.Embed(title=f"__**Torneo {info_torneo.loc['nombre']}:**__",
-                                    description="", color=0x00ff00)
-        for casa in casas:
-            torneo_status_embed.add_field(name=f"{casa[1]}  __**{casa[0]}**__: {places_dict.get(info_torneo[casa[4]], ':zero:')}", value=f"Puntos: {str(int(info_torneo[casa[2]]))}, participantes: {str(int(info_torneo[casa[3]]))}", inline=False)
-            for idx, categoria in enumerate(categorias):
-                list = ""
-                for team, team_info in teams.loc[(teams["torneo"] == torneo) & (teams["categoria"] == categoria) & (teams["casa"] == casa[0])].iterrows():
-                    list += f"{status_dict_2[team_info['DD']]} {status_dict_2[team_info['DF']]} {status_dict_2[team_info['CL']]} {places_dict.get(team_info['lugar'], ':black_large_square:')} {team_info.loc['nombre'].title() if len(team_info.loc['nombre']) < 12 else team_info.loc['nombre'][:10].title()}\n"
-                if list == "":
-                    list = "."
-                torneo_status_embed.add_field(name=f"__**{categoria}:**__ \n", value=list, inline=True)
-
-        await message_edit.edit(embed = torneo_status_embed)
-
-    message_ids.to_csv("message_ids.csv", index = True)
-    #print("torneos post done")
+    await message_edit.edit(embed = torneo_status_embed)
 
 
+# On ready
 @client.event
 async def on_ready():
     for guild in client.guilds:
@@ -146,6 +146,7 @@ async def on_ready():
         print(member.name.encode('utf-8'))
 
 
+### On message
 @client.event
 async def on_message(message):
     if message.author == client.user:
@@ -153,7 +154,7 @@ async def on_message(message):
     mensaje = message.content
     #print("\n\n", message.channel, "-", message.author, ":", mensaje)
 
-
+    # When message is in "activacion"
     if str(message.channel) == "📖activacion":
         await message.delete()
         id = int(message.content)
@@ -180,6 +181,29 @@ async def on_message(message):
             await message.channel.send("El id " + str(id) + " no existe", delete_after=5)
             print("El id " + str(id) + " no existe")
 
+    # When message is "sell"
+    if str(message.channel) == "📃marketplace" and message.content.startswith('!sell'):
+        await message.delete()
+        product, price = message.content[6:].split(",")
+        market_db = pd.DataFrame(pd.read_csv("market_db.csv", index_col = 0, header = 0, squeeze = True))
+        market_db = market_db.append({"product": product.replace(" ",""), "cost": price.replace(" ",""), "seller": message.author, "buying": 0}, ignore_index=True)
+        market_db.to_csv("market_db.csv", index = True)
+
+    if str(message.channel) == "📃marketplace" and message.content.startswith('!buy'):
+        await message.delete()
+        product, price = message.content[5:].split(",")
+        market_db = pd.DataFrame(pd.read_csv("market_db.csv", index_col = 0, header = 0, squeeze = True))
+        market_db = market_db.append({"product": product.replace(" ",""), "cost": price.replace(" ",""), "seller": message.author, "buying": 1}, ignore_index=True)
+        market_db.to_csv("market_db.csv", index = True)
+
+    if str(message.channel) == "📃marketplace" and message.content.startswith('!delete'):
+        await message.delete()
+        index = int(message.content[8:])
+        market_db = pd.DataFrame(pd.read_csv("market_db.csv", index_col = 0, header = 0, squeeze = True))
+        market_db = market_db.drop(index = index)
+        market_db.to_csv("market_db.csv", index = True)
+
+    # When message is "!update"
     if str(message.channel) == "chat-coh" and message.content == '!update':
         with open('DataBase.xlsx', 'rb') as file :
             players = pd.read_excel(file, sheet_name='players', index_col=0, header=0)
@@ -193,6 +217,7 @@ async def on_message(message):
             await update_player(member,player)
         await message.channel.send("Terminado")
 
+    # When message is "status"
     if mensaje == '!status':
         if not isinstance(message.channel, discord.channel.DMChannel):
             await message.delete()
@@ -208,10 +233,12 @@ async def on_message(message):
         await message_status(message.author, player, teams)
         print("status sent")
 
+    # When message is "!test"
     if message.content == "!test":
         await message.delete()
 
 
+# Message icons
 casas = [   ("Red Team",":red_circle:", "norm_red", "part_red", "rank_red"),
             ("Blue Team", ":blue_circle:", "norm_blue", "part_blue", "rank_blue"),
             ("Yellow Team", ":yellow_circle:", "norm_yellow", "part_yellow", "rank_yellow"),
@@ -222,5 +249,7 @@ status_dict_2 = {1: ":green_square:", 0: ":black_large_square:", -1: ":black_lar
 places_dict = {1: ":first_place:", 2: ":second_place:", 3: ":third_place:"}
 rango_dict = {"Blanco": ":white_large_square:", "Verde": ":green_square:", "Morado": ":purple_square:", "Rojo": ":red_square:", "Negro": ":white_square_button:"}
 
+# Init the bot
 update_status_torneo.start()
+update_marketplace.start()
 client.run(TOKEN)
