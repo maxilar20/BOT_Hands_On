@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
-import random
 import discord
+from discord.ext import tasks, commands
 import csv
-import json
 import pandas as pd
 from dotenv import load_dotenv
 from tabulate import tabulate
-from discord.ext import tasks, commands
 import asyncio
 
 load_dotenv("TOKEN.env")
